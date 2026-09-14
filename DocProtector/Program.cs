@@ -26,8 +26,6 @@ namespace DocProtector
             //Register Identity Service
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
-
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
