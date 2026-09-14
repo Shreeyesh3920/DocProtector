@@ -1,3 +1,7 @@
+using DocProtector.Data;
+using Microsoft.AspNetCore.Identity;
+using DocProtector.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace DocProtector
 {
@@ -14,6 +18,16 @@ namespace DocProtector
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            //Database Connection String: Registered DatabaseContext
+            builder.Services.AddDbContext<ApplicationDbContext>((options) => {
+                options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+            });
+
+            //Register Identity Service
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -23,10 +37,9 @@ namespace DocProtector
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+                        app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
