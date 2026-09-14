@@ -1,0 +1,6 @@
+@DocProtector_HostAddress = http://localhost:5094
+
+GET {{DocProtector_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
