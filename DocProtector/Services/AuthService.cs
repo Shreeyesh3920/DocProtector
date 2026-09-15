@@ -1,6 +1,7 @@
 ﻿using DocProtector.DTOs;
 using DocProtector.Models;
 using DocProtector.Services.Interfaces;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 
 namespace DocProtector.Services
@@ -8,8 +9,10 @@ namespace DocProtector.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> userManager;
-        public AuthService(UserManager<ApplicationUser> _userManager) { 
+        private readonly SignInManager<ApplicationUser> signInManager;
+        public AuthService(UserManager<ApplicationUser> _userManager, SignInManager<ApplicationUser> _signInManager ) { 
             userManager = _userManager;
+            signInManager = _signInManager;
         }
 
         /// <summary>
@@ -18,8 +21,24 @@ namespace DocProtector.Services
         /// <param name="loginRequestDTO"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
+        public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
         {
+            if (loginRequestDTO == null) 
+                throw new ArgumentNullException(nameof(loginRequestDTO));
+
+
+            ApplicationUser? user = await userManager.FindByEmailAsync(loginRequestDTO.Email);
+            if (user == null) { 
+                return new LoginResponseDTO() { 
+                    Succeeded = false,
+                    Message = "Login failed.",
+                    Errors = new List<string> { "Invalid email or password." }
+                };
+            }
+
+            await signInManager.PasswordSignInAsync(user, loginRequestDTO.Password, true, lockoutOnFailure: false);
+
+
             throw new NotImplementedException();
         }
 

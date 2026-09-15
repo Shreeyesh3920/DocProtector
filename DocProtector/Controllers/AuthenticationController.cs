@@ -1,10 +1,11 @@
 ﻿using DocProtector.DTOs;
-using DocProtector.Models;
 using DocProtector.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DocProtector.Controllers
 {
+    [ApiController]
+    [Route("user")]
     public class AuthenticationController : Controller
     {
         private readonly IAuthService authService;

@@ -2,6 +2,8 @@ using DocProtector.Data;
 using Microsoft.AspNetCore.Identity;
 using DocProtector.Models;
 using Microsoft.EntityFrameworkCore;
+using DocProtector.Services.Interfaces;
+using DocProtector.Services;
 
 namespace DocProtector
 {
@@ -26,6 +28,22 @@ namespace DocProtector
             //Register Identity Service
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
+            //Register Application Services
+            builder.Services.AddScoped<IAuthService, AuthService>();
+
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AngularClient", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:4200")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -35,9 +53,11 @@ namespace DocProtector
                 app.UseSwaggerUI();
             }
 
-                        app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseAuthorization();
+
+            app.UseCors("AngularClient");
 
             app.MapControllers();
 
