@@ -30,6 +30,7 @@ namespace DocProtector
 
             //Register Application Services
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<ITokenService, TokenService>();
 
 
             builder.Services.AddCors(options =>

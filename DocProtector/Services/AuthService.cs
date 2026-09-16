@@ -10,9 +10,11 @@ namespace DocProtector.Services
     {
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
-        public AuthService(UserManager<ApplicationUser> _userManager, SignInManager<ApplicationUser> _signInManager ) { 
+        private readonly ITokenService tokenService;
+        public AuthService(UserManager<ApplicationUser> _userManager, SignInManager<ApplicationUser> _signInManager, ITokenService _tokenService) { 
             userManager = _userManager;
             signInManager = _signInManager;
+            tokenService = _tokenService;
         }
 
         /// <summary>
@@ -21,25 +23,45 @@ namespace DocProtector.Services
         /// <param name="loginRequestDTO"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
+        public async Task<(LoginResponseDTO loginResponse, string? token)> LoginAsync(LoginRequestDTO loginRequestDTO)
         {
             if (loginRequestDTO == null) 
                 throw new ArgumentNullException(nameof(loginRequestDTO));
 
-
             ApplicationUser? user = await userManager.FindByEmailAsync(loginRequestDTO.Email);
-            if (user == null) { 
-                return new LoginResponseDTO() { 
+            if (user == null) {
+                return (new LoginResponseDTO()
+                {
                     Succeeded = false,
                     Message = "Login failed.",
                     Errors = new List<string> { "Invalid email or password." }
-                };
+                }, 
+                null);
             }
 
-            await signInManager.PasswordSignInAsync(user, loginRequestDTO.Password, true, lockoutOnFailure: false);
+            bool result = await userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
 
+            var Token = tokenService.GenerateToken(user);
+            if (result)
+            {
+                return (new LoginResponseDTO()
+                {   
+                    UserId = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email!,
+                    Succeeded = true,
+                    Message = "Login successful."
+                },
+                Token);
+            }
 
-            throw new NotImplementedException();
+            return (new LoginResponseDTO()
+            {
+                Succeeded = false,
+                Message = "Login failed. Please check your credentials and try again.",
+                Errors = new List<string> { "Invalid email or password." }
+            }, 
+            null);
         }
 
         /// <summary>
