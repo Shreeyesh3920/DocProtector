@@ -46,6 +46,7 @@ namespace DocProtector.Services
             {
                 return (new LoginResponseDTO()
                 {   
+                    Token = Token,
                     UserId = user.Id,
                     FullName = user.FullName,
                     Email = user.Email!,

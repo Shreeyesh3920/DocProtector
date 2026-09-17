@@ -20,6 +20,11 @@ namespace DocProtector.Controllers
             return await authService.RegisterAsync(registerRequestDTO);
         }
 
+        /// <summary>
+        /// Login: server creates access_token cookie
+        /// </summary>
+        /// <param name="loginRequestDTO"></param>
+        /// <returns></returns>
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDTO loginRequestDTO)
         {
@@ -28,17 +33,33 @@ namespace DocProtector.Controllers
                 return Unauthorized(result.loginResponse.Message);
 
             Response.Cookies.Append(
-                "accessToken", result.token!,
+                "access_token", result.token!,
                 new CookieOptions
                 {
                     HttpOnly = true,
                     SameSite = SameSiteMode.None,
                     Secure = true,
-                    Expires = DateTimeOffset.UtcNow.AddMinutes(1)
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(10)
                 }
                 );
 
             return Ok(result.loginResponse);
+        }
+
+
+        /// <summary>
+        /// Logout: server deletes/clears access_token cookie
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("access_token");
+
+            return Ok(new
+            {
+                message = "Logout successful."
+            });
         }
     }
 }

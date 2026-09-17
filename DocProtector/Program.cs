@@ -1,9 +1,12 @@
 using DocProtector.Data;
-using Microsoft.AspNetCore.Identity;
 using DocProtector.Models;
-using Microsoft.EntityFrameworkCore;
-using DocProtector.Services.Interfaces;
 using DocProtector.Services;
+using DocProtector.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace DocProtector
 {
@@ -31,8 +34,49 @@ namespace DocProtector
             //Register Application Services
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IUserService, UserService>();
 
+            // JWT Authentication:
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme =
+                    JwtBearerDefaults.AuthenticationScheme;
 
+                options.DefaultChallengeScheme =
+                    JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            builder.Configuration["Jwt:Secrete"]!
+                        )
+                    )
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token =
+                            context.Request.Cookies["access_token"];
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+            //CORS:
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AngularClient", policy =>
@@ -40,7 +84,9 @@ namespace DocProtector
                     policy
                         .WithOrigins("http://localhost:4200")
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+
                 });
             });
 
@@ -56,9 +102,11 @@ namespace DocProtector
 
             app.UseHttpsRedirection();
 
+            app.UseCors("AngularClient");
+
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseCors("AngularClient");
 
             app.MapControllers();
 
