@@ -7,5 +7,6 @@ namespace DocProtector.Services.Interfaces
     {
         public string GenerateAccessToken(ApplicationUser user);
         public Task<string> GenerateRefreshToken(ApplicationUser user);
+        public Task<(string AccessToken, string RefreshToken)> RefreshTokenAsync(string refreshToken);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using DocProtector.Data;
 using DocProtector.Models;
 using DocProtector.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace DocProtector.Repositories
 {
@@ -14,18 +15,22 @@ namespace DocProtector.Repositories
 
         public async Task AddRefreshTokenAsync(RefreshToken refreshToken)
         {
-            await context.RefreshTokens.AddAsync(refreshToken);
+            await context!.RefreshTokens.AddAsync(refreshToken);
             await context.SaveChangesAsync();
         }
 
-        public Task<RefreshToken> GetRefreshTokenAsync(string refreshToken)
+        public async Task<RefreshToken> GetRefreshTokenAsync(string refreshToken)
         {
-            throw new NotImplementedException();
+            RefreshToken? token= await context!.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshToken && x.IsRevoked == false);
+            return token!;
         }
 
-        public Task UpdateRefreshTokenAsync(string refreshToken)
+        public async Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
         {
-            throw new NotImplementedException();
+            RefreshToken? token = await context!.RefreshTokens.SingleOrDefaultAsync(x => x.Token == refreshToken.Token && x.IsRevoked == false);
+            token!.IsRevoked = true;
+            token.RevokedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
         }
     }
 }

@@ -2,6 +2,8 @@
 using DocProtector.Repositories;
 using DocProtector.Repositories.Interfaces;
 using DocProtector.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -13,9 +15,13 @@ namespace DocProtector.Services
     {
         private readonly IConfiguration configuration;
         private readonly IRefreshTokenRepository refreshTokenRepository;
+        private readonly UserManager<ApplicationUser> userManager;
 
-        public TokenService(IConfiguration _configuration, IRefreshTokenRepository _refreshTokenRepository) {
+
+        public TokenService(IConfiguration _configuration, IRefreshTokenRepository _refreshTokenRepository, UserManager<ApplicationUser> _userManager)
+        {
             configuration = _configuration;
+            userManager = _userManager;
             refreshTokenRepository = _refreshTokenRepository;
         }
 
@@ -31,8 +37,8 @@ namespace DocProtector.Services
             var credentials = new SigningCredentials(symmericSecurityKey, SecurityAlgorithms.HmacSha256Signature);
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.UserName!),
+                new Claim(ClaimTypes.Email, user.Email!),
                 new Claim(ClaimTypes.Role, "Application-User"),
                 new Claim(ClaimTypes.NameIdentifier, user.Id)
             };
@@ -55,7 +61,7 @@ namespace DocProtector.Services
         /// <param name="user"></param>
         /// <returns></returns>
         public async Task<string> GenerateRefreshToken(ApplicationUser user)
-        { 
+        {
             string refreshToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             RefreshToken token = new RefreshToken
             {
@@ -71,5 +77,34 @@ namespace DocProtector.Services
             return refreshToken;
         }
 
+
+        /// <summary>
+        /// Updating the existing refresh token to be revoked and expired, and generating new access and refresh tokens
+        /// </summary>
+        /// <param name="refreshToken"></param>
+        /// <returns></returns>
+        /// <exception cref="UnauthorizedAccessException"></exception>
+        public async Task<(string AccessToken, string RefreshToken)> RefreshTokenAsync(string refreshToken) {
+
+            RefreshToken? token = await refreshTokenRepository.GetRefreshTokenAsync(refreshToken);
+            if (token == null)
+                throw new UnauthorizedAccessException("Invalid refresh token.");
+
+            if (token.ExpiresAt <= DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Refresh token expired.");
+
+            ApplicationUser? user = await userManager.FindByIdAsync(token.UserId);
+            if (user == null)
+                throw new UnauthorizedAccessException("User not found.");
+
+            //Updating the existing refresh token to be revoked and expired
+            await refreshTokenRepository.UpdateRefreshTokenAsync(token);
+
+            string newAccessToken = GenerateAccessToken(user);
+            string newRefreshToken = await GenerateRefreshToken(user);
+
+            return (newAccessToken, newRefreshToken);
+        }
     }
 }
+

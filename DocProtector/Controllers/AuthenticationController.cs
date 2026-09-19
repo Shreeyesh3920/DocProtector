@@ -14,10 +14,12 @@ namespace DocProtector.Controllers
     {
         private readonly IAuthService authService;
         private readonly IUserService userService;
+        private readonly ITokenService tokenService;
 
-        public AuthenticationController(IAuthService _authService, IUserService _userService)
+        public AuthenticationController(IAuthService _authService, IUserService _userService, ITokenService _tokenService)
         {
             authService = _authService;
+            tokenService = _tokenService;
             userService = _userService;
         }
 
@@ -45,7 +47,7 @@ namespace DocProtector.Controllers
                     HttpOnly = true,
                     SameSite = SameSiteMode.None,
                     Secure = true,
-                    Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(1)
                 });
 
             Response.Cookies.Append("refresh_token", result.refreshToken!,
@@ -107,6 +109,34 @@ namespace DocProtector.Controllers
                 return Unauthorized();
 
             return Ok(user);
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh() 
+        {
+            var tokens = await tokenService.RefreshTokenAsync(Request.Cookies["refresh_token"]!);
+            Response.Cookies.Append("access_token", tokens.AccessToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.None,
+                    Secure = true,
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(10)
+                });
+
+            Response.Cookies.Append("refresh_token", tokens.RefreshToken,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.None,
+                    Secure = true,
+                    Expires = DateTimeOffset.UtcNow.AddDays(10)
+                });
+
+            return Ok(new
+            {
+                message = "Token refreshed successfully."
+            });
         }
     }
 }
