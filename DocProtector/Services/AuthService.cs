@@ -23,7 +23,7 @@ namespace DocProtector.Services
         /// <param name="loginRequestDTO"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<(LoginResponseDTO loginResponse, string? token)> LoginAsync(LoginRequestDTO loginRequestDTO)
+        public async Task<(LoginResponseDTO loginResponse, string? accessToken, string? refreshToken)> LoginAsync(LoginRequestDTO loginRequestDTO)
         {
             if (loginRequestDTO == null) 
                 throw new ArgumentNullException(nameof(loginRequestDTO));
@@ -36,24 +36,26 @@ namespace DocProtector.Services
                     Message = "Login failed.",
                     Errors = new List<string> { "Invalid email or password." }
                 }, 
-                null);
+                null, null);
             }
 
             bool result = await userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
 
-            var Token = tokenService.GenerateToken(user);
+            var access_token = tokenService.GenerateAccessToken(user);
+            var refresh_token = await tokenService.GenerateRefreshToken(user);
             if (result)
             {
                 return (new LoginResponseDTO()
                 {   
-                    Token = Token,
+                    AccessToken = access_token,
+                    RefreshToken = refresh_token,
                     UserId = user.Id,
                     FullName = user.FullName,
                     Email = user.Email!,
                     Succeeded = true,
                     Message = "Login successful."
                 },
-                Token);
+                access_token, refresh_token);
             }
 
             return (new LoginResponseDTO()
@@ -62,7 +64,7 @@ namespace DocProtector.Services
                 Message = "Login failed. Please check your credentials and try again.",
                 Errors = new List<string> { "Invalid email or password." }
             }, 
-            null);
+            null, null);
         }
 
         /// <summary>
@@ -108,5 +110,6 @@ namespace DocProtector.Services
                 Message = "User registered successfully."
             };
         }
+
     }
 }

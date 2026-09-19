@@ -1,5 +1,7 @@
 using DocProtector.Data;
 using DocProtector.Models;
+using DocProtector.Repositories;
+using DocProtector.Repositories.Interfaces;
 using DocProtector.Services;
 using DocProtector.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,6 +37,10 @@ namespace DocProtector
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+            //Register Application Repositories
+            builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
             // JWT Authentication:
             builder.Services.AddAuthentication(options =>

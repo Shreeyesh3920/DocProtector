@@ -5,6 +5,7 @@ namespace DocProtector.Services.Interfaces
 {
     public interface ITokenService
     {
-        public string GenerateToken(ApplicationUser user);
+        public string GenerateAccessToken(ApplicationUser user);
+        public Task<string> GenerateRefreshToken(ApplicationUser user);
     }
 }
