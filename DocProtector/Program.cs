@@ -38,9 +38,13 @@ namespace DocProtector
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+            builder.Services.AddScoped<IDocumentService, DocumentService>();
+
 
             //Register Application Repositories
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 
             // JWT Authentication:
             builder.Services.AddAuthentication(options =>
